@@ -1,0 +1,23 @@
+name: Deploy Infrastructure - Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_destroy:
+        description: "Destroy infrastructure?"
+        type: boolean
+        default: false
+
+jobs:
+  terraform:
+    uses: buildcloudio/terraform-deployment-template/.github/workflows/terraform-deploy.yml@main
+    with:
+      working_directory: "Tests"
+      terraform_version: "1.7.0"
+      var_file: "module.tf.tfvars"
+      run_destroy: ${{ inputs.run_destroy }}
+    secrets:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}

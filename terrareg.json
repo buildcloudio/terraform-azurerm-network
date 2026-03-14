@@ -1,0 +1,7 @@
+{
+  "description": "Azure - Virtual Network, Subnets, NSGs, and Route Tables",
+  "owner": "buildcloudio",
+  "source": "https://github.com/buildcloudio/terraform-azurerm-network",
+  "issues": "https://github.com/buildcloudio/terraform-azurerm-network/issues",
+  "email": ""
+}
