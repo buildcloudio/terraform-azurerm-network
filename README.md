@@ -13,101 +13,162 @@ Terraform module to manage Azure Virtual Networks, Subnets, Network Security Gro
 
 ```hcl
 module "network" {
-  source   = "buildcloudio/network/azurerm"
-  version  = "x.x.x"
+  for_each = var.networks
+  source   = "../"
 
-  subscription        = var.subscription
-  environment         = var.environment
-  usecase             = var.usecase
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  subscription        = each.value.subscription
+  environment         = each.value.environment
+  usecase             = each.value.usecase
+  location            = each.value.location
+  resource_group_name = each.value.resource_group_name
 
-  create_vnet        = true
-  vnet_address_space = ["10.0.0.0/16"]
+  create_vnet        = each.value.create_vnet
+  vnet_address_space = each.value.vnet_address_space
 
-  subnets = {
-    "frontend" = {
-      address_prefixes = ["10.0.1.0/24"]
-      create_nsg       = true
-      nsg_rules = [
-        {
-          name                   = "allow-https"
-          priority               = 100
-          direction              = "Inbound"
-          access                 = "Allow"
-          protocol               = "Tcp"
-          destination_port_range = "443"
-        }
-      ]
-      create_route_table = true
-      routes = [
-        {
-          name           = "internet"
-          address_prefix = "0.0.0.0/0"
-          next_hop_type  = "Internet"
-        }
-      ]
-    }
+  existing_vnet_config = each.value.existing_vnet_config
 
-    "backend" = {
-      address_prefixes        = ["10.0.2.0/24"]
-      create_nsg              = false
-      existing_nsg_id         = "/subscriptions/.../networkSecurityGroups/my-nsg"
-      create_route_table      = false
-      existing_route_table_id = "/subscriptions/.../routeTables/my-rt"
-    }
-  }
+  subnets = each.value.subnets
 }
-```
 
-### Referencing an existing VNet (no data blocks)
-
-```hcl
-module "network" {
-  source   = "buildcloudio/network/azurerm"
-  version  = "x.x.x"
-
-  subscription        = var.subscription
-  environment         = var.environment
-  usecase             = var.usecase
-  location            = var.location
-  resource_group_name = var.resource_group_name
-
-  create_vnet = false
-  existing_vnet_config = {
-    name            = "my-existing-vnet"
-    resource_group  = "my-network-rg"
-    subscription_id = "00000000-0000-0000-0000-000000000000"
-  }
-
-  subnets = {
-    "app" = {
-      address_prefixes   = ["10.1.1.0/24"]
-      create_nsg         = true
-      create_route_table = true
-    }
-  }
-}
 ```
 
 ### variables.tf
 
 ```hcl
-variable "subscription" { type = string }
-variable "environment"  { type = string }
-variable "usecase"      { type = string }
-variable "location"     { type = string }
-variable "resource_group_name" { type = string }
+variable "networks" {
+  description = "Map of network configurations to deploy"
+  type = map(object({
+    subscription        = string
+    environment         = string
+    usecase             = string
+    location            = string
+    resource_group_name = string
+
+    create_vnet        = optional(bool, true)
+    vnet_address_space = optional(list(string), null)
+
+    existing_vnet_config = optional(object({
+      name            = string
+      resource_group  = string
+      subscription_id = string
+    }), null)
+
+    subnets = map(object({
+      address_prefixes = list(string)
+
+      create_nsg      = optional(bool, true)
+      existing_nsg_id = optional(string, null)
+      nsg_rules = optional(list(object({
+        name                       = string
+        priority                   = number
+        direction                  = string
+        access                     = string
+        protocol                   = string
+        source_port_range          = optional(string, "*")
+        destination_port_range     = optional(string, "*")
+        source_address_prefix      = optional(string, "*")
+        destination_address_prefix = optional(string, "*")
+      })), [])
+
+      create_route_table      = optional(bool, true)
+      existing_route_table_id = optional(string, null)
+      routes = optional(list(object({
+        name                   = string
+        address_prefix         = string
+        next_hop_type          = string
+        next_hop_in_ip_address = optional(string, null)
+      })), [])
+    }))
+  }))
+}
+
 ```
 
 ### module.tf.tfvars
 
 ```hcl
-subscription        = "buildcloudio"
-environment         = "dev"
-usecase             = "app"
-location            = "westeurope"
-resource_group_name = "buildcloudio-dev-app-rg"
+networks = {
+  "network1" = {
+    subscription        = "buildcloudio"
+    environment         = "dev"
+    usecase             = "test"
+    location            = "westeurope"
+    resource_group_name = "buildcloudio-dev-registry-rg"
+    create_vnet         = true
+    vnet_address_space  = ["10.0.0.0/16"]
+
+    subnets = {
+      "frontend" = {
+        address_prefixes = ["10.0.1.0/24"]
+        create_nsg       = true
+        nsg_rules = [
+          {
+            name                       = "allow-https"
+            priority                   = 100
+            direction                  = "Inbound"
+            access                     = "Allow"
+            protocol                   = "Tcp"
+            source_port_range          = "*"
+            destination_port_range     = "443"
+            source_address_prefix      = "*"
+            destination_address_prefix = "*"
+          },
+          {
+            name                       = "allow-http"
+            priority                   = 110
+            direction                  = "Inbound"
+            access                     = "Allow"
+            protocol                   = "Tcp"
+            source_port_range          = "*"
+            destination_port_range     = "80"
+            source_address_prefix      = "*"
+            destination_address_prefix = "*"
+          }
+        ]
+        create_route_table = true
+        routes = [
+          {
+            name           = "internet"
+            address_prefix = "0.0.0.0/0"
+            next_hop_type  = "Internet"
+          }
+        ]
+      }
+
+      "backend" = {
+        address_prefixes = ["10.0.2.0/24"]
+        create_nsg       = true
+        nsg_rules = [
+          {
+            name                       = "allow-from-frontend"
+            priority                   = 100
+            direction                  = "Inbound"
+            access                     = "Allow"
+            protocol                   = "Tcp"
+            source_port_range          = "*"
+            destination_port_range     = "8080"
+            source_address_prefix      = "10.0.1.0/24"
+            destination_address_prefix = "*"
+          }
+        ]
+        create_route_table = true
+        routes             = []
+      }
+
+      "containers" = {
+        address_prefixes   = ["10.0.3.0/24"]
+        create_nsg         = false
+        create_route_table = false
+        delegation = {
+          name         = "aci-delegation"
+          service_name = "Microsoft.ContainerInstance/containerGroups"
+          actions      = ["Microsoft.Network/virtualNetworks/subnets/action"]
+        }
+      }
+    }
+  }
+}
+
 ```
 
 ### main.tf
