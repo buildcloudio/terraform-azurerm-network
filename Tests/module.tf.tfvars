@@ -4,7 +4,7 @@ networks = {
     environment         = "dev"
     usecase             = "test"
     location            = "westeurope"
-    resource_group_name = "buildcloudio-dev-test-rg"
+    resource_group_name = "buildcloudio-dev-registry-rg"
     create_vnet         = true
     vnet_address_space  = ["10.0.0.0/16"]
 
