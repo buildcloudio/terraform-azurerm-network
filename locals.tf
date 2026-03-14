@@ -10,7 +10,7 @@ locals {
   nsg_rules_flat = {
     for pair in flatten([
       for subnet_key, subnet in var.subnets : [
-        for rule in (subnet.create_nsg ? subnet.nsg_rules : []) : {
+        for rule in(subnet.create_nsg ? subnet.nsg_rules : []) : {
           key        = "${subnet_key}-${rule.name}"
           subnet_key = subnet_key
           rule       = rule
@@ -23,7 +23,7 @@ locals {
   routes_flat = {
     for pair in flatten([
       for subnet_key, subnet in var.subnets : [
-        for route in (subnet.create_route_table ? subnet.routes : []) : {
+        for route in(subnet.create_route_table ? subnet.routes : []) : {
           key        = "${subnet_key}-${route.name}"
           subnet_key = subnet_key
           route      = route
