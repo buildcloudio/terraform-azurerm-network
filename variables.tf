@@ -75,6 +75,12 @@ variable "subnets" {
   type = map(object({
     address_prefixes = list(string)
 
+    delegation = optional(object({
+      name         = string
+      service_name = string
+      actions      = optional(list(string), [])
+    }), null)
+
     create_nsg      = optional(bool, true)
     existing_nsg_id = optional(string, null)
     nsg_rules = optional(list(object({

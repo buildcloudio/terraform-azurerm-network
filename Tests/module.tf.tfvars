@@ -65,6 +65,17 @@ networks = {
         create_route_table = true
         routes             = []
       }
+
+      "containers" = {
+        address_prefixes   = ["10.0.3.0/24"]
+        create_nsg         = false
+        create_route_table = false
+        delegation = {
+          name         = "aci-delegation"
+          service_name = "Microsoft.ContainerInstance/containerGroups"
+          actions      = ["Microsoft.Network/virtualNetworks/subnets/action"]
+        }
+      }
     }
   }
 }

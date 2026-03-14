@@ -157,6 +157,7 @@ provider "azurerm" {
 | Name | Description | Type | Required |
 |------|-------------|------|----------|
 | address_prefixes | CIDR blocks for the subnet | `list(string)` | yes |
+| delegation | Subnet delegation config (`name`, `service_name`, `actions`) | `object` | no (default: `null`) |
 | create_nsg | Create a new NSG for this subnet | `bool` | no (default: `true`) |
 | existing_nsg_id | ID of an existing NSG to associate | `string` | when `create_nsg = false` |
 | nsg_rules | Security rules for the new NSG | `list(object)` | no (default: `[]`) |
